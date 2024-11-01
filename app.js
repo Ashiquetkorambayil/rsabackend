@@ -7,10 +7,14 @@ var connectDB = require('./config/db')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var adminRouter = require('./routes/admin');
-var baseLocationRouter = require('./routes/baseLocation')
-var serviceTypeRouter = require('./routes/serviceType')
+var baseLocationRouter = require('./routes/baseLocation');
+var serviceTypeRouter = require('./routes/serviceType');
+var roleRouter = require('./routes/role');
+var staffRouter = require('./routes/staff');
+var providerRouter = require('./routes/provider');
 const cors = require('cors')
 var app = express();
+
 connectDB()
 
 app.use(cors({
@@ -31,7 +35,10 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/admin',adminRouter);
 app.use('/baseLocation',baseLocationRouter);
-app.use('/servieType',serviceTypeRouter)
+app.use('/servieType',serviceTypeRouter);
+app.use('/role', roleRouter);
+app.use('/staff', staffRouter);
+app.use('/provider', providerRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -4,6 +4,7 @@ const baseLocationSchema = new mongoose.Schema({
   baseLocation: {
     type: String,
     required: true,
+    trim: true,
   },
   latitude: {
     type: Number,

@@ -11,6 +11,10 @@ const adminSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  role: {
+    type:String,
+    default:'admin'
+  },
   tokens: { type: String, default: "" },
 });
 adminSchema.pre("save", async function (next) {
