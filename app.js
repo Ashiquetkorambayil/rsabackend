@@ -12,6 +12,8 @@ var serviceTypeRouter = require('./routes/serviceType');
 var roleRouter = require('./routes/role');
 var staffRouter = require('./routes/staff');
 var providerRouter = require('./routes/provider');
+var driverRouter = require('./routes/driver');
+var companyRouter = require('./routes/company');
 const cors = require('cors')
 var app = express();
 
@@ -39,6 +41,8 @@ app.use('/servieType',serviceTypeRouter);
 app.use('/role', roleRouter);
 app.use('/staff', staffRouter);
 app.use('/provider', providerRouter);
+app.use('/driver', driverRouter);
+app.use('/company', companyRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -1,0 +1,96 @@
+// controllers/company.controller.js
+const Company = require('../Model/company');
+
+exports.createCompany = async (req, res) => {
+  try {
+    const { name, idNumber, phone, personalPhoneNumber, password, creditLimitAmount, vehicle } = req.body;
+
+    // Handle vehicle array data
+    const vehicleData = Array.isArray(vehicle) ? vehicle.map(v => ({
+      serviceType: v.serviceType,
+      basicAmount: v.basicAmount,
+      kmForBasicAmount: v.kmForBasicAmount,
+      overRideCharge: v.overRideCharge,
+      vehicleNumber: v.vehicleNumber,
+    })) : [];
+
+    const company = new Company({
+      name,
+      idNumber,
+      phone,
+      personalPhoneNumber,
+      password,
+      creditLimitAmount: creditLimitAmount || null, // Set creditLimitAmount if provided or null
+      image: req.file ? req.file.filename : null, // Store image filename if uploaded
+      vehicle: vehicleData,
+    });
+
+    await company.save();
+    res.status(201).json(company);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCompanies = async (req, res) => {
+  try {
+    const companies = await Company.find().populate('vehicle.serviceType');
+    res.json(companies);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCompanyById = async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.id).populate('vehicle.serviceType');
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateCompany = async (req, res) => {
+  try {
+    const { name, idNumber, phone, personalPhoneNumber, password, creditLimitAmount, vehicle } = req.body;
+
+    const company = await Company.findById(req.params.id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    // Update fields if provided
+    company.name = name || company.name;
+    company.idNumber = idNumber || company.idNumber;
+    company.phone = phone || company.phone;
+    company.personalPhoneNumber = personalPhoneNumber || company.personalPhoneNumber;
+    company.password = password || company.password;
+    company.creditLimitAmount = creditLimitAmount || company.creditLimitAmount;
+    company.image = req.file ? req.file.filename : company.image;
+
+    // Update vehicle data if provided
+    if (vehicle) {
+      company.vehicle = vehicle.map(v => ({
+        serviceType: v.serviceType,
+        basicAmount: v.basicAmount,
+        kmForBasicAmount: v.kmForBasicAmount,
+        overRideCharge: v.overRideCharge,
+        vehicleNumber: v.vehicleNumber,
+      }));
+    }
+
+    await company.save();
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteCompany = async (req, res) => {
+  try {
+    const company = await Company.findByIdAndDelete(req.params.id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    res.json({ message: 'Company deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
