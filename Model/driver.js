@@ -48,7 +48,6 @@ const driverSchema = new mongoose.Schema({
       },
       vehicleNumber: {
         type: String,
-        required: true,
         trim: true,
       },
     },

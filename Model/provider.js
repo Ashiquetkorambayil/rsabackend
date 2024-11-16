@@ -34,12 +34,27 @@ const providerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // Array of serviceType references
-  serviceType: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ServiceType',
-    required: true,
-  }],
+  serviceDetails: [
+    {
+      serviceType: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ServiceType',
+        required: true,
+      },
+      basicAmount: {
+        type: Number,
+        required: true,
+      },
+      kmForBasicAmount: {
+        type: Number,
+        required: true,
+      },
+      overRideCharge: {
+        type: Number,
+        required: true,
+      },
+    },
+  ],
   image: {
     type: String, // URL or path to the image
   },
