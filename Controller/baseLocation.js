@@ -3,9 +3,9 @@ const BaseLocation = require('../Model/baseLocation'); // Adjust the path as nee
 // Create a new base location
 exports.createBaseLocation = async (req, res) => {
   try {
-    const { baseLocation, latitude, longitude } = req.body;
+    const { baseLocation, latitudeAndLongitude } = req.body;
 
-    const newBaseLocation = new BaseLocation({ baseLocation, latitude, longitude });
+    const newBaseLocation = new BaseLocation({ baseLocation, latitudeAndLongitude });
     await newBaseLocation.save();
 
     res.status(201).json({ message: "Base location created successfully", data: newBaseLocation });
@@ -42,12 +42,12 @@ exports.getBaseLocationById = async (req, res) => {
 
 // Update a base location
 exports.updateBaseLocation = async (req, res) => {
-    const { baseLocation, latitude, longitude } = req.body;
+    const { baseLocation, latitudeAndLongitude } = req.body;
     const {id} = req.params
   try {
     const location = await BaseLocation.findByIdAndUpdate(
       id,
-      { baseLocation, latitude, longitude },
+      { baseLocation, latitudeAndLongitude },
       { new: true }
     );
     if (!location) return res.status(404).json({ message: "Base location not found" });

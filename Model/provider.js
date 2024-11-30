@@ -53,6 +53,9 @@ const providerSchema = new mongoose.Schema({
         type: Number,
         required: true,
       },
+      vehicleNumber: {
+        type: String,
+      }
     },
   ],
   image: {

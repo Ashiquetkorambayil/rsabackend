@@ -26,21 +26,27 @@ exports.registerAdmin = async (req, res) => {
 exports.loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(req.body, 'Request body');
 
-    // Check if admin exists
-    const admin = await Admin.findOne({ email });
+    const admin = await Admin.findOne({ email: email.trim().toLowerCase() });
+    console.log(admin, 'Admin found in the database');
+
     if (!admin) {
+      console.log('No admin found');
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, admin.password);
+    console.log(isMatch, 'Password comparison result');
+
     if (!isMatch) {
+      console.log('Password mismatch');
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET);
+    console.log(token, 'Generated JWT token');
+
     admin.tokens = token;
     await admin.save();
 
@@ -50,5 +56,3 @@ exports.loginAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-

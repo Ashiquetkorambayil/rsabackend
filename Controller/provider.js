@@ -2,36 +2,46 @@ const Provider = require('../Model/provider');
 
 // Create a new provider
 exports.createProvider = async (req, res) => {
-    try {
+  try {
       const { name, companyName, baseLocation, idNumber, creditAmountLimit, phone, personalPhoneNumber, password, serviceDetails } = req.body;
-  
-      const serviceData = Array.isArray(serviceDetails) ? serviceDetails.map(s => ({
-        serviceType: s.serviceType,
-        basicAmount: s.basicAmount,
-        kmForBasicAmount: s.kmForBasicAmount,
-        overRideCharge: s.overRideCharge,
-      })) : [];
-  
+
+      // Parse serviceDetails if it is a string
+      const parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
+
+      const serviceData = Array.isArray(parsedServiceDetails)
+          ? parsedServiceDetails.map(s => ({
+                serviceType: s.id, // Map 'id' to 'serviceType'
+                basicAmount: s.basicAmount,
+                kmForBasicAmount: s.kmForBasicAmount,
+                overRideCharge: s.overRideCharge,
+                vehicleNumber: s.vehicleNumber,
+            }))
+          : [];
+
+      console.log('Transformed serviceData:', serviceData);
+
       const provider = new Provider({
-        name,
-        companyName,
-        baseLocation,
-        idNumber,
-        creditAmountLimit,
-        phone,
-        personalPhoneNumber,
-        password,
-        image: req.file ? req.file.filename : null,
-        serviceDetails: serviceData,
+          name,
+          companyName,
+          baseLocation,
+          idNumber,
+          creditAmountLimit,
+          phone,
+          personalPhoneNumber,
+          password,
+          image: req.file ? req.file.filename : null,
+          serviceDetails: serviceData,
       });
-  
+
       await provider.save();
       res.status(201).json(provider);
-    } catch (error) {
+  } catch (error) {
+      console.error('Error saving provider:', error);
       res.status(400).json({ message: error.message });
-    }
-  };
-  
+  }
+};
+
+
 
 // Get all providers
 exports.getAllProviders = async (req, res) => {
@@ -56,38 +66,45 @@ exports.getProviderById = async (req, res) => {
 
 // Update a provider by ID
 exports.updateProvider = async (req, res) => {
-    try {
-      const { name, companyName, baseLocation, idNumber, creditAmountLimit, phone, personalPhoneNumber, password, serviceDetails } = req.body;
-  
-      const provider = await Provider.findById(req.params.id);
-      if (!provider) return res.status(404).json({ message: 'Provider not found' });
-  
-      provider.name = name || provider.name;
-      provider.companyName = companyName || provider.companyName;
-      provider.baseLocation = baseLocation || provider.baseLocation;
-      provider.idNumber = idNumber || provider.idNumber;
-      provider.creditAmountLimit = creditAmountLimit || provider.creditAmountLimit;
-      provider.phone = phone || provider.phone;
-      provider.personalPhoneNumber = personalPhoneNumber || provider.personalPhoneNumber;
-      provider.password = password || provider.password;
-      provider.image = req.file ? req.file.filename : provider.image;
-  
-      if (serviceDetails) {
-        provider.serviceDetails = serviceDetails.map(s => ({
-          serviceType: s.serviceType,
+  try {
+    const { name, companyName, baseLocation, idNumber, creditAmountLimit, phone, personalPhoneNumber, password, serviceDetails } = req.body;
+
+    const provider = await Provider.findById(req.params.id);
+    if (!provider) return res.status(404).json({ message: 'Provider not found' });
+
+    // Parse serviceDetails if it is a string
+    const parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
+
+    const serviceData = Array.isArray(parsedServiceDetails)
+      ? parsedServiceDetails.map(s => ({
+          serviceType: s.id || s.serviceType, // Handle both creation and update cases
           basicAmount: s.basicAmount,
           kmForBasicAmount: s.kmForBasicAmount,
           overRideCharge: s.overRideCharge,
-        }));
-      }
-  
-      await provider.save();
-      res.status(200).json(provider);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  };
-  
+          vehicleNumber: s.vehicleNumber,
+        }))
+      : provider.serviceDetails; // Retain the existing serviceDetails if none provided
+
+    // Update provider fields
+    provider.name = name || provider.name;
+    provider.companyName = companyName || provider.companyName;
+    provider.baseLocation = baseLocation || provider.baseLocation;
+    provider.idNumber = idNumber || provider.idNumber;
+    provider.creditAmountLimit = creditAmountLimit || provider.creditAmountLimit;
+    provider.phone = phone || provider.phone;
+    provider.personalPhoneNumber = personalPhoneNumber || provider.personalPhoneNumber;
+    provider.password = password || provider.password;
+    provider.image = req.file ? req.file.filename : provider.image;
+    provider.serviceDetails = serviceData;
+
+    await provider.save();
+    res.status(200).json(provider);
+  } catch (error) {
+    console.error('Error updating provider:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 
 // Delete a provider by ID
 exports.deleteProvider = async (req, res) => {
@@ -97,5 +114,35 @@ exports.deleteProvider = async (req, res) => {
     res.status(204).json();
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Provider Log-in
+
+exports.loginProvider = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    // Check if driver exists
+    const provider = await Provider.findOne({ phone });
+    if (!provider) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, provider.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: provider._id }, process.env.JWT_SECRET);
+    provider.tokens = token; // If you want to store the token, you can update the provider schema to include a `tokens` field
+    await provider.save();
+
+    res.status(200).json({ token, message: "Provider logged in successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };

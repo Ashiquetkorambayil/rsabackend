@@ -1,5 +1,8 @@
 // controllers/staffController.js
 const Staff = require('../Model/staff');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { ClientSession } = require('mongodb');
 
 // Create Staff
 exports.createStaff = async (req, res) => {
@@ -45,25 +48,32 @@ exports.getStaffById = async (req, res) => {
 
 // Update Staff
 exports.updateStaff = async (req, res) => {
-    try {
-      const updatedData = {
-        name: req.body.name,
-        email: req.body.email,
-        address: req.body.address,
-        phone: req.body.phone,
-        userName: req.body.userName,
-        password: req.body.password,
-        image: req.file ? req.file.filename : null, // Update the image if a new one is uploaded
-        role: req.body.role,
-      };
-  
-      const staff = await Staff.findByIdAndUpdate(req.params.id, updatedData, { new: true });
-      if (!staff) return res.status(404).json({ message: 'Staff not found' });
-      res.status(200).json({ message: 'Staff updated successfully!', data: staff });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+  try {
+    // Dynamically create the updatedData object
+    const updatedData = {
+      name: req.body.name,
+      email: req.body.email,
+      address: req.body.address,
+      phone: req.body.phone,
+      userName: req.body.userName,
+      password: req.body.password,
+      role: req.body.role,
+    };
+
+    // Add image to updatedData only if a new file is uploaded
+    if (req.file) {
+      updatedData.image = req.file.filename;
     }
-  };
+
+    const staff = await Staff.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+    if (!staff) return res.status(404).json({ message: 'Staff not found' });
+
+    res.status(200).json({ message: 'Staff updated successfully!', data: staff });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 
 // Delete Staff
 exports.deleteStaff = async (req, res) => {
@@ -73,5 +83,31 @@ exports.deleteStaff = async (req, res) => {
     res.status(200).json({ message: 'Staff deleted successfully!' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// log-in for staff 
+exports.loginStaff = async (req, res) => {
+  try {
+    const { userName, password } = req.body;
+
+    // Check if staff exists
+    const staff = await Staff.findOne({ userName });
+    if (!staff) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Directly compare passwords (not recommended for production unless passwords are hashed)
+    if (password !== staff.password) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign({ id: staff._id }, process.env.JWT_SECRET);
+
+    res.status(200).json({ token, message: "Staff logged in successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };

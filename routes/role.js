@@ -1,21 +1,22 @@
 const express = require('express');
 const controller = require('../Controller/role');
+const Jwt = require('../Middileware/jwt')
 
 const router = express.Router();
 
 // Route for creating a new role
-router.post('/', controller.createRole);
+router.post('/',Jwt,controller.createRole);
 
 // Route for getting all roles
-router.get('/', controller.getAllRoles);
+router.get('/',Jwt,controller.getAllRoles);
 
 // Route for getting a single role by ID
-router.get('/:id', controller.getRoleById);
+router.get('/:id',Jwt,controller.getRoleById);
 
 // Route for updating a role by ID
-router.put('/:id', controller.updateRole);
+router.put('/:id',Jwt,controller.updateRole);
 
 // Route for deleting a role by ID
-router.delete('/:id', controller.deleteRole);
+router.delete('/:id',Jwt,controller.deleteRole);
 
 module.exports = router;

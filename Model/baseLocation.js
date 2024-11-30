@@ -6,14 +6,10 @@ const baseLocationSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  latitude: {
-    type: Number,
+  latitudeAndLongitude: {
+    type: String,
     required: true,
-  },
-  longitude: {
-    type: Number,
-    required: true,
-  },
+  }
 });
 
 module.exports = mongoose.model('BaseLocation', baseLocationSchema);

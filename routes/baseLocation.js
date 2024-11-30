@@ -4,18 +4,18 @@ const controller = require('../Controller/baseLocation'); // Adjust the path as 
 const jwt = require('../Middileware/jwt')
 
 // Route to create a new baselocation
-router.post('/',controller.createBaseLocation);
+router.post('/',jwt,controller.createBaseLocation);
 
 // Route to get all baselocation
-router.get('/',controller.getBaseLocations)
+router.get('/',jwt,controller.getBaseLocations)
 
 //Route to get by id baselocation
-router.get('/:id',controller.getBaseLocationById)
+router.get('/:id',jwt,controller.getBaseLocationById)
 
 //Route to update baselocation
-router.put('/:id',controller.updateBaseLocation)
+router.put('/:id',jwt,controller.updateBaseLocation)
 
 //Route to delete baselocation
-router.delete('/:id',controller.deleteBaseLocation)
+router.delete('/:id',jwt,controller.deleteBaseLocation)
 
 module.exports = router;

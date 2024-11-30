@@ -1,5 +1,7 @@
 // controllers/driver.controller.js
 const Driver = require('../Model/driver');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 exports.createDriver = async (req, res) => {
   try {
@@ -87,6 +89,36 @@ exports.deleteDriver = async (req, res) => {
     res.json({ message: 'Driver deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Driver log-in 
+
+exports.loginDriver = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    // Check if driver exists
+    const driver = await Driver.findOne({ phone });
+    if (!driver) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, driver.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: driver._id }, process.env.JWT_SECRET);
+    driver.tokens = token; // If you want to store the token, you can update the driver schema to include a `tokens` field
+    await driver.save();
+
+    res.status(200).json({ token, message: "Driver logged in successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

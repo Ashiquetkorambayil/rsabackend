@@ -10,4 +10,7 @@ router.get('/:id', driverController.getDriverById);
 router.put('/:id', upload.single('image'), driverController.updateDriver);
 router.delete('/:id', driverController.deleteDriver);
 
+// Log in for provider
+router.post('/login',driverController.loginDriver);
+
 module.exports = router;
