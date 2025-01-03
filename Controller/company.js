@@ -6,13 +6,17 @@ exports.createCompany = async (req, res) => {
     const { name, idNumber, phone, personalPhoneNumber, password, creditLimitAmount, vehicle } = req.body;
 
     // Handle vehicle array data
-    const vehicleData = Array.isArray(vehicle) ? vehicle.map(v => ({
-      serviceType: v.serviceType,
-      basicAmount: v.basicAmount,
-      kmForBasicAmount: v.kmForBasicAmount,
-      overRideCharge: v.overRideCharge,
-      vehicleNumber: v.vehicleNumber,
-    })) : [];
+    const parsedVehicleDetails = typeof vehicle === 'string' ? JSON.parse(vehicle) : vehicle
+
+    const vehicleData = Array.isArray(parsedVehicleDetails)
+    ? parsedVehicleDetails.map(v => ({
+          serviceType: v.id, // Map 'id' to 'serviceType'
+          basicAmount: v.basicAmount,
+          kmForBasicAmount: v.kmForBasicAmount,
+          overRideCharge: v.overRideCharge,
+          vehicleNumber: v.vehicleNumber,
+      }))
+    : [];
 
     const company = new Company({
       name,
@@ -51,6 +55,7 @@ exports.getCompanyById = async (req, res) => {
   }
 };
 
+
 exports.updateCompany = async (req, res) => {
   try {
     const { name, idNumber, phone, personalPhoneNumber, password, creditLimitAmount, vehicle } = req.body;
@@ -58,7 +63,21 @@ exports.updateCompany = async (req, res) => {
     const company = await Company.findById(req.params.id);
     if (!company) return res.status(404).json({ error: 'Company not found' });
 
-    // Update fields if provided
+    // Parse vehicle if it's a string
+    const parsedVehicle = typeof vehicle === 'string' ? JSON.parse(vehicle) : vehicle;
+
+    // Prepare vehicle data
+    const vehicleData = Array.isArray(parsedVehicle)
+      ? parsedVehicle.map(v => ({
+          serviceType: v.id || v.serviceType, // Handle both creation and update cases
+          basicAmount: v.basicAmount,
+          kmForBasicAmount: v.kmForBasicAmount,
+          overRideCharge: v.overRideCharge,
+          vehicleNumber: v.vehicleNumber,
+        }))
+      : company.vehicle; // Retain the existing vehicle data if none provided
+
+    // Update company fields
     company.name = name || company.name;
     company.idNumber = idNumber || company.idNumber;
     company.phone = phone || company.phone;
@@ -66,24 +85,16 @@ exports.updateCompany = async (req, res) => {
     company.password = password || company.password;
     company.creditLimitAmount = creditLimitAmount || company.creditLimitAmount;
     company.image = req.file ? req.file.filename : company.image;
-
-    // Update vehicle data if provided
-    if (vehicle) {
-      company.vehicle = vehicle.map(v => ({
-        serviceType: v.serviceType,
-        basicAmount: v.basicAmount,
-        kmForBasicAmount: v.kmForBasicAmount,
-        overRideCharge: v.overRideCharge,
-        vehicleNumber: v.vehicleNumber,
-      }));
-    }
+    company.vehicle = vehicleData;
 
     await company.save();
-    res.json(company);
+    res.status(200).json(company);
   } catch (error) {
+    console.error('Error updating company:', error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.deleteCompany = async (req, res) => {
   try {

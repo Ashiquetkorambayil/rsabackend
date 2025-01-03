@@ -7,13 +7,20 @@ exports.createDriver = async (req, res) => {
   try {
     const { name, idNumber, phone, personalPhoneNumber, password, vehicle } = req.body;
 
-    const vehicleData = Array.isArray(vehicle) ? vehicle.map(v => ({
-      serviceType: v.serviceType,
-      basicAmount: v.basicAmount,
-      kmForBasicAmount: v.kmForBasicAmount,
-      overRideCharge: v.overRideCharge,
-      vehicleNumber: v.vehicleNumber,
-    })) : [];
+const parsedVehicleDetails = typeof vehicle === 'string' ? JSON.parse(vehicle) : vehicle
+
+  
+
+
+    const vehicleData = Array.isArray(parsedVehicleDetails)
+    ? parsedVehicleDetails.map(v => ({
+          serviceType: v.id, // Map 'id' to 'serviceType'
+          basicAmount: v.basicAmount,
+          kmForBasicAmount: v.kmForBasicAmount,
+          overRideCharge: v.overRideCharge,
+          vehicleNumber: v.vehicleNumber,
+      }))
+    : [];
 
     const driver = new Driver({
       name,
@@ -58,29 +65,36 @@ exports.updateDriver = async (req, res) => {
     const driver = await Driver.findById(req.params.id);
     if (!driver) return res.status(404).json({ error: 'Driver not found' });
 
+    // Parse vehicle if it's a string
+    const parsedVehicle = typeof vehicle === 'string' ? JSON.parse(vehicle) : vehicle;
+
+    const vehicleData = Array.isArray(parsedVehicle)
+      ? parsedVehicle.map(v => ({
+          serviceType: v.id || v.serviceType, // Handle both creation and update cases
+          basicAmount: v.basicAmount,
+          kmForBasicAmount: v.kmForBasicAmount,
+          overRideCharge: v.overRideCharge,
+          vehicleNumber: v.vehicleNumber,
+        }))
+      : driver.vehicle; // Retain the existing vehicle data if none provided
+
+    // Update driver fields
     driver.name = name || driver.name;
     driver.idNumber = idNumber || driver.idNumber;
     driver.phone = phone || driver.phone;
     driver.personalPhoneNumber = personalPhoneNumber || driver.personalPhoneNumber;
     driver.password = password || driver.password;
     driver.image = req.file ? req.file.filename : driver.image;
-
-    if (vehicle) {
-      driver.vehicle = vehicle.map(v => ({
-        serviceType: v.serviceType,
-        basicAmount: v.basicAmount,
-        kmForBasicAmount: v.kmForBasicAmount,
-        overRideCharge: v.overRideCharge,
-        vehicleNumber: v.vehicleNumber,
-      }));
-    }
+    driver.vehicle = vehicleData;
 
     await driver.save();
-    res.json(driver);
+    res.status(200).json(driver);
   } catch (error) {
+    console.error('Error updating driver:', error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.deleteDriver = async (req, res) => {
   try {

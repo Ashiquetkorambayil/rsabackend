@@ -23,6 +23,6 @@ router.put('/:id',jwt, upload.single('image'), controller.updateStaff);
 router.delete('/:id',jwt, controller.deleteStaff);
 
 //Staff log-in
-router.post('/login',jwt,controller.loginStaff)
+router.post('/login',controller.loginStaff)
 
 module.exports = router;

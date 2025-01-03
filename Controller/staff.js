@@ -101,11 +101,17 @@ exports.loginStaff = async (req, res) => {
     if (password !== staff.password) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    
+
     // Generate JWT token
     const token = jwt.sign({ id: staff._id }, process.env.JWT_SECRET);
 
-    res.status(200).json({ token, message: "Staff logged in successfully" });
+    // Include role and name in the response
+    res.status(200).json({
+      token,
+      role: staff.role,
+      name: staff.name,
+      message: "Staff logged in successfully"
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Server error" });

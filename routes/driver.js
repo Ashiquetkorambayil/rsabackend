@@ -3,12 +3,13 @@ const express = require('express');
 const driverController = require('../Controller/driver');
 const upload = require('../config/multer');
 const router = express.Router();
+const jwt = require('../Middileware/jwt')
 
-router.post('/', upload.single('image'), driverController.createDriver); // 'image' is the name of the file field
-router.get('/', driverController.getDrivers);
-router.get('/:id', driverController.getDriverById);
-router.put('/:id', upload.single('image'), driverController.updateDriver);
-router.delete('/:id', driverController.deleteDriver);
+router.post('/',jwt, upload.single('image'), driverController.createDriver); // 'image' is the name of the file field
+router.get('/',jwt, driverController.getDrivers);
+router.get('/:id',jwt, driverController.getDriverById);
+router.put('/:id',jwt,upload.single('image'), driverController.updateDriver);
+router.delete('/:id',jwt, driverController.deleteDriver);
 
 // Log in for provider
 router.post('/login',driverController.loginDriver);
