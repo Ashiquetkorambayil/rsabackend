@@ -1,0 +1,182 @@
+const Booking = require('../Model/booking');
+const Driver = require('../Model/driver'); // Import your Driver model
+const Provider = require('../Model/provider'); // Import your Provider model
+
+// Controller to create a booking
+
+exports.createBooking = async (req, res) => {
+    try {
+        const bookingData = req.body;
+
+        // Handle the case where 'company' is an empty string
+        if (!bookingData.company || bookingData.company === "") {
+            bookingData.company = null; // Or you can delete the field entirely if required
+        }
+
+        // Create the booking document
+        const newBooking = new Booking(bookingData);
+
+        await newBooking.save();
+
+        res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        res.status(500).json({ message: 'Error creating booking', error: error.message });
+    }
+};
+
+// Controller to get all bookings by search query
+
+exports.getAllBookings = async (req, res) => {
+    try {
+        let { search, startDate, endDate, page = 1, limit = 10 } = req.query;
+
+        // Convert page and limit to integers
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        const query = {};
+
+        // Handle search
+        if (search) {
+            search = search.trim();
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (dateRegex.test(search)) {
+                const [day, month, year] = search.split('/');
+                const startOfDay = new Date(`${year}-${month}-${day}T00:00:00Z`);
+                const endOfDay = new Date(`${year}-${month}-${day}T23:59:59Z`);
+
+                query.createdAt = {
+                    $gte: startOfDay,
+                    $lte: endOfDay,
+                };
+            } else {
+                const searchRegex = new RegExp(search.replace(/\s+/g, ''), 'i');
+                const matchingDrivers = await Driver.find({ phone: searchRegex }).select('_id');
+                const matchingProviders = await Provider.find({ phone: searchRegex }).select('_id');
+
+                query.$or = [
+                    { fileNumber: searchRegex },
+                    { mob1: searchRegex },
+                    { customerVehicleNumber: searchRegex },
+                    { bookedBy: searchRegex },
+                    { driver: { $in: matchingDrivers.map(d => d._id) } },
+                    { provider: { $in: matchingProviders.map(p => p._id) } },
+                ];
+            }
+        }
+
+        // Handle date range filter
+        if (startDate || endDate) {
+            query.createdAt = query.createdAt || {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
+        }
+
+        // Pagination and sorting by createdAt in descending order
+        const total = await Booking.countDocuments(query);
+        const bookings = await Booking.find(query)
+            .populate('baselocation')
+            .populate('showroom')
+            .populate('serviceType')
+            .populate('company')
+            .populate('driver')
+            .populate('provider')
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort({ createdAt: -1 });  // Sorting by createdAt in descending order
+
+        res.status(200).json({
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            bookings,
+        });
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        res.status(500).json({ message: 'Server error while fetching bookings' });
+    }
+};
+
+
+
+
+// Controller to get a booking by ID
+
+exports.getBookingById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const booking = await Booking.findById(id)
+            .populate('baselocation') // Populate related documents
+            .populate('showroom')
+            .populate('serviceType')
+            .populate('company')
+            .populate('driver')
+            .populate('provider');
+        
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+        
+        res.status(200).json(booking);
+    } catch (error) {
+        console.error('Error fetching booking by ID:', error);
+        res.status(500).json({ message: 'Server error while fetching the booking' });
+    }
+};
+
+// Controller to update a booking by ID
+
+exports.updateBooking = async (req, res) => {
+    const { id } = req.params;
+    const updatedData = req.body;
+console.log("adjust",updatedData)
+    try {
+        // Handle the case where 'company' is an empty string in update
+        if (!updatedData.company || updatedData.company === "") {
+            updatedData.company = null; // Or you can delete the field entirely if required
+        }
+
+        const updatedBooking = await Booking.findByIdAndUpdate(id, updatedData, { new: true })
+            .populate('baselocation') // Populate related documents
+            .populate('showroom')
+            .populate('serviceType')
+            .populate('company')
+            .populate('driver')
+            .populate('provider');
+
+        if (!updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        res.status(200).json({ message: 'Booking updated successfully', booking: updatedBooking });
+    } catch (error) {
+        console.error('Error updating booking:', error);
+        res.status(500).json({ message: 'Error updating booking', error: error.message });
+    }
+};
+
+// Controller to delete a booking by ID
+
+exports.deleteBooking = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deletedBooking = await Booking.findByIdAndDelete(id);
+
+        if (!deletedBooking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        res.status(200).json({ message: 'Booking deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        res.status(500).json({ message: 'Error deleting booking', error: error.message });
+    }
+};
