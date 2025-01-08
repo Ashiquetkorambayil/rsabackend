@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Define the schema for booking
 const bookingSchema = new mongoose.Schema({
     workType: { type: String, required: true },
     fileNumber: { type: String, required: true },
@@ -8,13 +7,14 @@ const bookingSchema = new mongoose.Schema({
     latitudeAndLongitude: { type: String, required: true },
     baselocation: { type: mongoose.Schema.Types.ObjectId, ref: 'BaseLocation', required: true },
     showroom: { type: mongoose.Schema.Types.ObjectId, ref: 'Showroom', required: true },
-    company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company'},
+    company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: false },
     totalDistence: { type: Number, required: true },
     dropoffLocation: { type: String, required: true },
     dropoffLatitudeAndLongitude: { type: String, required: true },
     trapedLocation: { type: String, required: true },
     serviceType: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceType', required: true },
     customerName: { type: String, required: true },
+    serviceCategory: { type: String, required: true },
     mob1: { type: String, required: true },
     mob2: { type: String },
     vehicleType: { type: String, required: true },
@@ -24,6 +24,10 @@ const bookingSchema = new mongoose.Schema({
     status: { type: String },
     driver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver' },
     provider: { type: mongoose.Schema.Types.ObjectId, ref: 'Provider' },
+    afterExpenseForProvider:{ type: Number },
+    afterExpenseForDriver:{ type: Number },
+    payableAmountForProvider:{ type: Number },
+    payableAmountForDriver:{ type: Number },
     totalAmount: { type: Number },
     totalDriverDistence: { type: Number },
     driverSalary: { type: Number },
@@ -32,7 +36,8 @@ const bookingSchema = new mongoose.Schema({
     adjustmentValue: { type: Number },
     amountWithoutInsurance: { type: Number },
     createdBy:{type: String},
-    bookedBy:{type: String}
+    bookedBy:{type: String},
+    pickupDate:{type: String}
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

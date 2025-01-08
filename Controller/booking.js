@@ -1,9 +1,17 @@
 const Booking = require('../Model/booking');
+const Driver = require('../Model/driver'); // Import your Driver model
+const Provider = require('../Model/provider'); // Import your Provider model
 
 // Controller to create a booking
+
 exports.createBooking = async (req, res) => {
     try {
         const bookingData = req.body;
+
+        // Handle the case where 'company' is an empty string
+        if (!bookingData.company || bookingData.company === "") {
+            bookingData.company = null; // Or you can delete the field entirely if required
+        }
 
         // Create the booking document
         const newBooking = new Booking(bookingData);
@@ -17,24 +25,89 @@ exports.createBooking = async (req, res) => {
     }
 };
 
-// Controller to get all bookings
+// Controller to get all bookings by search query
+
 exports.getAllBookings = async (req, res) => {
     try {
-        const bookings = await Booking.find()
-            .populate('baselocation') // Populate related documents
+        let { search, startDate, endDate, page = 1, limit = 10 } = req.query;
+
+        // Convert page and limit to integers
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        const query = {};
+
+        // Handle search
+        if (search) {
+            search = search.trim();
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (dateRegex.test(search)) {
+                const [day, month, year] = search.split('/');
+                const startOfDay = new Date(`${year}-${month}-${day}T00:00:00Z`);
+                const endOfDay = new Date(`${year}-${month}-${day}T23:59:59Z`);
+
+                query.createdAt = {
+                    $gte: startOfDay,
+                    $lte: endOfDay,
+                };
+            } else {
+                const searchRegex = new RegExp(search.replace(/\s+/g, ''), 'i');
+                const matchingDrivers = await Driver.find({ phone: searchRegex }).select('_id');
+                const matchingProviders = await Provider.find({ phone: searchRegex }).select('_id');
+
+                query.$or = [
+                    { fileNumber: searchRegex },
+                    { mob1: searchRegex },
+                    { customerVehicleNumber: searchRegex },
+                    { bookedBy: searchRegex },
+                    { driver: { $in: matchingDrivers.map(d => d._id) } },
+                    { provider: { $in: matchingProviders.map(p => p._id) } },
+                ];
+            }
+        }
+
+        // Handle date range filter
+        if (startDate || endDate) {
+            query.createdAt = query.createdAt || {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
+        }
+
+        // Pagination and sorting by createdAt in descending order
+        const total = await Booking.countDocuments(query);
+        const bookings = await Booking.find(query)
+            .populate('baselocation')
             .populate('showroom')
             .populate('serviceType')
             .populate('company')
             .populate('driver')
-            .populate('provider'); // Add any other references you need to populate
-        res.status(200).json(bookings);
+            .populate('provider')
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort({ createdAt: -1 });  // Sorting by createdAt in descending order
+
+        res.status(200).json({
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            bookings,
+        });
     } catch (error) {
         console.error('Error fetching bookings:', error);
         res.status(500).json({ message: 'Server error while fetching bookings' });
     }
 };
 
+
+
+
 // Controller to get a booking by ID
+
 exports.getBookingById = async (req, res) => {
     const { id } = req.params;
 
@@ -59,11 +132,17 @@ exports.getBookingById = async (req, res) => {
 };
 
 // Controller to update a booking by ID
+
 exports.updateBooking = async (req, res) => {
     const { id } = req.params;
     const updatedData = req.body;
-
+console.log("adjust",updatedData)
     try {
+        // Handle the case where 'company' is an empty string in update
+        if (!updatedData.company || updatedData.company === "") {
+            updatedData.company = null; // Or you can delete the field entirely if required
+        }
+
         const updatedBooking = await Booking.findByIdAndUpdate(id, updatedData, { new: true })
             .populate('baselocation') // Populate related documents
             .populate('showroom')
@@ -84,6 +163,7 @@ exports.updateBooking = async (req, res) => {
 };
 
 // Controller to delete a booking by ID
+
 exports.deleteBooking = async (req, res) => {
     const { id } = req.params;
 
