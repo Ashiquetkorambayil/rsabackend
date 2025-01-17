@@ -35,7 +35,10 @@ exports.getAllBookings = async (req, res) => {
         page = parseInt(page, 10);
         limit = parseInt(limit, 10);
 
-        const query = {};
+        const query = {
+            status: "Booking Added", // Filter only bookings with this status
+        };
+        
 
         // Handle search
         if (search) {
