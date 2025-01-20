@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../Controller/booking'); // Adjust the path as needed
-const jwt = require('../Middileware/jwt')
+const jwt = require('../Middileware/jwt');
+const upload = require('../config/multer');
+
 
 // Route to create a new booking
 router.post('/',jwt,controller.createBooking);
@@ -13,5 +15,16 @@ router.get('/:id',jwt,controller.getBookingById);
 router.put('/:id',jwt,controller.updateBooking);
 // Route to delete booking
 router.delete('/:id',jwt,controller.deleteBooking);
+//Route to update the pickup and dropoff details
+
+router.put('/pickupbyadmin/:id', jwt, controller.updatePickupByAdmin);
+// Route for the removing the pickup Image
+router.patch('/pickupimage/:id/:index',jwt,controller.removePickupImages);
+// Route for adding pickup images
+router.patch('/addingpickupimage/:id', jwt,upload.array('images', 6), controller.addPickupImages);
+// Route for the removing the dropoff Image
+router.patch('/dropoffimage/:id/:index',jwt,controller.removeDropoffImages);
+// Route for adding pickup images
+router.patch('/addingdropoffimage/:id', jwt,upload.array('images', 6), controller.addDropoffImages);
 
 module.exports = router;

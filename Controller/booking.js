@@ -1,6 +1,9 @@
 const Booking = require('../Model/booking');
 const Driver = require('../Model/driver'); // Import your Driver model
 const Provider = require('../Model/provider'); // Import your Provider model
+const multer = require('multer')
+
+
 
 // Controller to create a booking
 
@@ -183,3 +186,240 @@ exports.deleteBooking = async (req, res) => {
         res.status(500).json({ message: 'Error deleting booking', error: error.message });
     }
 };
+
+
+// Controller for updatatin pickup details from admin side 
+
+exports.updatePickupByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            totalDistence,
+            totalAmount,
+            pickupTime,
+            dropoffTime,
+            driverSalaryCheck,
+            compnayAmountCheck,
+            remark,
+        } = req.body;
+
+        // Validate required fields
+        if (!totalDistence || !totalAmount || !pickupTime || !dropoffTime) {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+
+        // Update the booking
+        const updatedBooking = await Booking.findByIdAndUpdate(
+            id,
+            {
+                totalDistence,
+                totalAmount,
+                pickupTime,
+                dropoffTime,
+                driverSalaryCheck,
+                compnayAmountCheck,
+                remark,
+                // status: 'Order Completed',
+            },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Booking updated successfully.',
+            booking: updatedBooking,
+        });
+    } catch (error) {
+        console.error('Error updating booking:', error);
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
+    }
+};
+
+
+// remove the pickup image 
+
+exports.removePickupImages = async (req, res) => {
+    const { id, index } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "ID is required" });
+    }
+
+    try {
+        // Find the booking by ID
+        const booking = await Booking.findById(id);
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        const pickupImages = booking.pickupImages;
+
+        // Check if the index is valid
+        if (index < 0 || index >= pickupImages.length) {
+            return res.status(400).json({ message: "Invalid index" });
+        }
+
+        // Remove the image at the specified index
+        const removedImage = pickupImages.splice(index, 1);
+
+        // Save the updated booking
+        booking.pickupImages = pickupImages;
+        await booking.save();
+
+        res.status(200).json({
+            message: "Image removed successfully",
+            removedImage,
+        });
+    } catch (error) {
+        console.error("Error removing pickup image:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+// add pickup images
+
+exports.addPickupImages = async (req, res) => {
+    console.log("first");
+  
+    const { id } = req.params;
+    console.log("id", req.params);
+  
+    try {
+      // Find the booking document by ID
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      // Get new image paths from the uploaded files
+      const newImages = req.files && req.files.length ? req.files.map(file => file.filename) : [];
+      console.log(newImages)
+  
+      if (!newImages.length) {
+        return res.status(400).json({ message: 'No images were uploaded.' });
+      }
+  
+      // Calculate the total number of images (existing + new)
+      const totalImages = booking.pickupImages.length + newImages.length;
+  
+      // If total images exceed the limit, return an error
+      if (totalImages > 6) {
+        return res.status(400).json({
+          message: `Limit exceeded. You can upload a maximum of 6 images for pickup images. You already have ${booking.pickupImages.length} images.`,
+        });
+      }
+  
+      // Push new images to the pickupImages array
+      booking.pickupImages.push(...newImages);
+  
+      // Save the updated booking
+      await booking.save();
+  
+      // Respond with the updated pickup images
+      res.status(200).json({
+        message: 'Pickup images added successfully',
+        pickupImages: booking.pickupImages,
+      });
+    } catch (error) {
+      console.error('Error in addPickupImages:', error);
+      res.status(500).json({ message: 'Error updating booking', error: error.message });
+    }
+  };
+  
+
+  // remove the dropoff image 
+
+exports.removeDropoffImages = async (req, res) => {
+    const { id, index } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "ID is required" });
+    }
+
+    try {
+        // Find the booking by ID
+        const booking = await Booking.findById(id);
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        const dropoffImages = booking.dropoffImages;
+
+        // Check if the index is valid
+        if (index < 0 || index >= dropoffImages.length) {
+            return res.status(400).json({ message: "Invalid index" });
+        }
+
+        // Remove the image at the specified index
+        const removedImage = dropoffImages.splice(index, 1);
+
+        // Save the updated booking
+        booking.dropoffImages = dropoffImages;
+        await booking.save();
+
+        res.status(200).json({
+            message: "Image removed successfully",
+            removedImage,
+        });
+    } catch (error) {
+        console.error("Error removing dropoff image:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+// add dropoff images
+
+exports.addDropoffImages = async (req, res) => {
+    
+  
+    const { id } = req.params;
+  
+    try {
+      // Find the booking document by ID
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      // Get new image paths from the uploaded files
+      const newImages = req.files && req.files.length ? req.files.map(file => file.filename) : [];
+      console.log(newImages)
+  
+      if (!newImages.length) {
+        return res.status(400).json({ message: 'No images were uploaded.' });
+      }
+  
+      // Calculate the total number of images (existing + new)
+      const totalImages = booking.dropoffImages.length + newImages.length;
+  
+      // If total images exceed the limit, return an error
+      if (totalImages > 6) {
+        return res.status(400).json({
+          message: `Limit exceeded. You can upload a maximum of 6 images for dropoff images. You already have ${booking.pickupImages.length} images.`,
+        });
+      }
+  
+      // Push new images to the pickupImages array
+      booking.dropoffImages.push(...newImages);
+  
+      // Save the updated booking
+      await booking.save();
+  
+      // Respond with the updated dropoff images
+      res.status(200).json({
+        message: 'Dropoff images added successfully',
+        dropoffImages: booking.dropoffImages,
+      });
+    } catch (error) {
+      console.error('Error in addDropoffImages:', error);
+      res.status(500).json({ message: 'Error updating booking', error: error.message });
+    }
+  };
+  
