@@ -191,6 +191,7 @@ exports.deleteBooking = async (req, res) => {
 // Controller for updatatin pickup details from admin side 
 
 exports.updatePickupByAdmin = async (req, res) => {
+  
     try {
         const { id } = req.params;
         const {
@@ -198,15 +199,15 @@ exports.updatePickupByAdmin = async (req, res) => {
             totalAmount,
             pickupTime,
             dropoffTime,
+            serviceVehicleNumber,
             driverSalaryCheck,
             compnayAmountCheck,
             remark,
         } = req.body;
+        console.log(req.body)
+        console.log(id)
 
-        // Validate required fields
-        if (!totalDistence || !totalAmount || !pickupTime || !dropoffTime) {
-            return res.status(400).json({ message: 'Missing required fields.' });
-        }
+      
 
         // Update the booking
         const updatedBooking = await Booking.findByIdAndUpdate(
@@ -219,7 +220,8 @@ exports.updatePickupByAdmin = async (req, res) => {
                 driverSalaryCheck,
                 compnayAmountCheck,
                 remark,
-                // status: 'Order Completed',
+                serviceVehicleNumber,
+                status: 'Order Completed',
             },
             { new: true } // Return the updated document
         );
@@ -305,7 +307,7 @@ exports.addPickupImages = async (req, res) => {
       }
   
       // Calculate the total number of images (existing + new)
-      const totalImages = booking.pickupImages.length + newImages.length;
+      const totalImages = booking.pickupImages.length + newImages.length; // For pickup
   
       // If total images exceed the limit, return an error
       if (totalImages > 6) {
@@ -397,12 +399,12 @@ exports.addDropoffImages = async (req, res) => {
       }
   
       // Calculate the total number of images (existing + new)
-      const totalImages = booking.dropoffImages.length + newImages.length;
+      const totalImages = booking.dropoffImages.length + newImages.length; // For dropoff
   
       // If total images exceed the limit, return an error
       if (totalImages > 6) {
         return res.status(400).json({
-          message: `Limit exceeded. You can upload a maximum of 6 images for dropoff images. You already have ${booking.pickupImages.length} images.`,
+          message: `Limit exceeded. You can upload a maximum of 6 images for dropoff images. You already have ${booking.dropoffImages.length} images.`,
         });
       }
   
