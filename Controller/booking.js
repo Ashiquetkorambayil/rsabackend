@@ -28,7 +28,89 @@ exports.createBooking = async (req, res) => {
     }
 };
 
-// Controller to get all bookings by search query
+// Controller to get Order completed booking  by search query
+
+exports.getOrderCompletedBookings = async (req, res) => {
+    try {
+        let { search, startDate, endDate, page = 1, limit = 10 } = req.query;
+
+        // Convert page and limit to integers
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        const query = {
+            status: "Order Completed", // Filter only bookings with this status
+        };
+        
+
+        // Handle search
+        if (search) {
+            search = search.trim();
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (dateRegex.test(search)) {
+                const [day, month, year] = search.split('/');
+                const startOfDay = new Date(`${year}-${month}-${day}T00:00:00Z`);
+                const endOfDay = new Date(`${year}-${month}-${day}T23:59:59Z`);
+
+                query.createdAt = {
+                    $gte: startOfDay,
+                    $lte: endOfDay,
+                };
+            } else {
+                const searchRegex = new RegExp(search.replace(/\s+/g, ''), 'i');
+                const matchingDrivers = await Driver.find({ phone: searchRegex }).select('_id');
+                const matchingProviders = await Provider.find({ phone: searchRegex }).select('_id');
+
+                query.$or = [
+                    { fileNumber: searchRegex },
+                    { mob1: searchRegex },
+                    { customerVehicleNumber: searchRegex },
+                    { bookedBy: searchRegex },
+                    { driver: { $in: matchingDrivers.map(d => d._id) } },
+                    { provider: { $in: matchingProviders.map(p => p._id) } },
+                ];
+            }
+        }
+
+        // Handle date range filter
+        if (startDate || endDate) {
+            query.createdAt = query.createdAt || {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
+        }
+
+        // Pagination and sorting by createdAt in descending order
+        const total = await Booking.countDocuments(query);
+        const bookings = await Booking.find(query)
+            .populate('baselocation')
+            .populate('showroom')
+            .populate('serviceType')
+            .populate('company')
+            .populate('driver')
+            .populate('provider')
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort({ createdAt: -1 });  // Sorting by createdAt in descending order
+
+        res.status(200).json({
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            bookings,
+        });
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        res.status(500).json({ message: 'Server error while fetching bookings' });
+    }
+};
+
+
+// Controller to get Booking Completed by search query
 
 exports.getAllBookings = async (req, res) => {
     try {
@@ -110,8 +192,6 @@ exports.getAllBookings = async (req, res) => {
 };
 
 
-
-
 // Controller to get a booking by ID
 
 exports.getBookingById = async (req, res) => {
@@ -170,22 +250,22 @@ console.log("adjust",updatedData)
 
 // Controller to delete a booking by ID
 
-exports.deleteBooking = async (req, res) => {
-    const { id } = req.params;
+// exports.deleteBooking = async (req, res) => {
+//     const { id } = req.params;
 
-    try {
-        const deletedBooking = await Booking.findByIdAndDelete(id);
+//     try {
+//         const deletedBooking = await Booking.findByIdAndDelete(id);
 
-        if (!deletedBooking) {
-            return res.status(404).json({ message: 'Booking not found' });
-        }
+//         if (!deletedBooking) {
+//             return res.status(404).json({ message: 'Booking not found' });
+//         }
 
-        res.status(200).json({ message: 'Booking deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting booking:', error);
-        res.status(500).json({ message: 'Error deleting booking', error: error.message });
-    }
-};
+//         res.status(200).json({ message: 'Booking deleted successfully' });
+//     } catch (error) {
+//         console.error('Error deleting booking:', error);
+//         res.status(500).json({ message: 'Error deleting booking', error: error.message });
+//     }
+// };
 
 
 // Controller for updatatin pickup details from admin side 
@@ -424,4 +504,28 @@ exports.addDropoffImages = async (req, res) => {
       res.status(500).json({ message: 'Error updating booking', error: error.message });
     }
   };
+
+  //Editing filenumber 
+
+  exports.updateFilenumber = async (req, res) => {
+    const { fileNumber } = req.body; // Destructure fileNumber from the request body
+    const { id } = req.params; // Extract id from the request parameters
+  
+    try {
+      // Find the booking by ID and update the fileNumber
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+  
+      booking.fileNumber = fileNumber; // Update the fileNumber
+      await booking.save(); // Save the updated booking
+  
+      res.status(200).json({ message: "Filenumber updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error updating booking", error: error.message });
+    }
+  };
+  
   

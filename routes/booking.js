@@ -9,12 +9,14 @@ const upload = require('../config/multer');
 router.post('/',jwt,controller.createBooking);
 // Route to get booking
 router.get('/',jwt,controller.getAllBookings);
+// Route to get booking
+router.get('/getordercompleted',jwt,controller.getOrderCompletedBookings);
 // Route to get booking by id
 router.get('/:id',jwt,controller.getBookingById);
 // Route to update booking
 router.put('/:id',jwt,controller.updateBooking);
 // Route to delete booking
-router.delete('/:id',jwt,controller.deleteBooking);
+// router.delete('/:id',jwt,controller.deleteBooking);
 //Route to update the pickup and dropoff details
 
 router.put('/pickupbyadmin/:id', jwt, controller.updatePickupByAdmin);
@@ -26,5 +28,7 @@ router.patch('/addingpickupimage/:id', jwt,upload.array('images', 6), controller
 router.patch('/dropoffimage/:id/:index',jwt,controller.removeDropoffImages);
 // Route for adding pickup images
 router.patch('/addingdropoffimage/:id', jwt,upload.array('images', 6), controller.addDropoffImages);
+//Route for editing fileNumber 
+router.patch('/updatefilenumber/:id',jwt,controller.updateFilenumber);
 
 module.exports = router;
