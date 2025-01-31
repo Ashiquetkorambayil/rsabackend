@@ -222,11 +222,31 @@ exports.getBookingById = async (req, res) => {
 exports.updateBooking = async (req, res) => {
     const { id } = req.params;
     const updatedData = req.body;
-console.log("adjust",updatedData)
+
+    console.log("adjust", updatedData);
+
     try {
         // Handle the case where 'company' is an empty string in update
         if (!updatedData.company || updatedData.company === "") {
             updatedData.company = null; // Or you can delete the field entirely if required
+        }
+
+        // Check if the body contains 'driver' and handle 'provider' if it exists
+        if (updatedData.driver) {
+            const booking = await Booking.findById(id); // Fetch the existing booking to check for the provider
+            if (booking && booking.provider) {
+                // If there's a provider and driver is being set, remove provider and set driver
+                await Booking.updateOne({ _id: id }, { $unset: { provider: "" } }); // Remove provider
+            }
+        }
+
+        // Check if the body contains 'provider' and handle 'driver' if it exists
+        if (updatedData.provider) {
+            const booking = await Booking.findById(id); // Fetch the existing booking to check for the driver
+            if (booking && booking.driver) {
+                // If there's a driver and provider is being set, remove driver and set provider
+                await Booking.updateOne({ _id: id }, { $unset: { driver: "" } }); // Remove driver
+            }
         }
 
         const updatedBooking = await Booking.findByIdAndUpdate(id, updatedData, { new: true })
@@ -247,6 +267,7 @@ console.log("adjust",updatedData)
         res.status(500).json({ message: 'Error updating booking', error: error.message });
     }
 };
+
 
 // Controller to delete a booking by ID
 
@@ -528,4 +549,33 @@ exports.addDropoffImages = async (req, res) => {
     }
   };
   
+//   Booking verify 
+
+exports.verifyBooking = async (req, res) => {
   
+    try {
+        const { id } = req.params;
+        
+        console.log(id,'this is id')
+
+        const updatedBooking = await Booking.findByIdAndUpdate(
+            id,
+            {
+                verified:true
+            },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Booking verified successfully.',
+            booking: updatedBooking,
+        });
+    } catch (error) {
+        console.error('Error verifying booking:', error);
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
+    }
+};

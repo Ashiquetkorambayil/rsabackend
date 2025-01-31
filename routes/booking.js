@@ -30,5 +30,7 @@ router.patch('/dropoffimage/:id/:index',jwt,controller.removeDropoffImages);
 router.patch('/addingdropoffimage/:id', jwt,upload.array('images', 6), controller.addDropoffImages);
 //Route for editing fileNumber 
 router.patch('/updatefilenumber/:id',jwt,controller.updateFilenumber);
+// Route for verify booking 
+router.patch('/verifybooking/:id',jwt,controller.verifyBooking);
 
 module.exports = router;

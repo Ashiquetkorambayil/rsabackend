@@ -46,6 +46,8 @@ const bookingSchema = new mongoose.Schema({
     serviceVehicleNumber:{type: String},
     pickupImages: { type: [String], default: [] }, 
     dropoffImages: { type: [String], default: [] }, 
+    verified:{type:Boolean},
+    feedback:{type:Boolean}
 
 }, { timestamps: true });
 
