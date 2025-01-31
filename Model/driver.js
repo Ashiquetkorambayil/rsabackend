@@ -27,6 +27,9 @@ const driverSchema = new mongoose.Schema({
   image: {
     type: String, // Path to the uploaded image
   },
+  rewardPoints: {
+    type: Number, 
+  },
   vehicle: [
     {
       serviceType: {

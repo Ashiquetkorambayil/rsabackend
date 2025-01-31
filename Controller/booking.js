@@ -2,6 +2,7 @@ const Booking = require('../Model/booking');
 const Driver = require('../Model/driver'); // Import your Driver model
 const Provider = require('../Model/provider'); // Import your Provider model
 const multer = require('multer')
+const mongoose = require('mongoose');
 
 
 
@@ -40,8 +41,8 @@ exports.getOrderCompletedBookings = async (req, res) => {
 
         const query = {
             status: "Order Completed", // Filter only bookings with this status
+            accountantVerified: { $ne: true } // Exclude bookings where accountantVerified is true
         };
-        
 
         // Handle search
         if (search) {
@@ -579,3 +580,93 @@ exports.verifyBooking = async (req, res) => {
         res.status(500).json({ message: 'Internal server error.', error: error.message });
     }
 };
+
+
+// posting feedback 
+
+
+exports.postFeedback = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { feedback } = req.body;
+
+        // Validate feedback input
+        if (!Array.isArray(feedback) || feedback.length === 0) {
+            return res.status(400).json({ message: "Feedback array is required" });
+        }
+
+        // Calculate total points from feedback
+        let totalPoints = feedback.reduce((sum, item) => {
+            const yesPoint = Number(item.yesPoint) || 0;
+            const noPoint = Number(item.noPoint) || 0;
+            return sum + (item.response === "yes" ? yesPoint : noPoint);
+        }, 0);
+
+        // Find the booking
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        // Update feedback and totalPoints in Booking
+        const updatedBooking = await Booking.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    feedback: feedback, // Directly update the feedback array
+                    totalPoints: totalPoints, // Set totalPoints
+                    feedbackCheck:true
+                }
+            },
+            { new: true } // Return the updated document
+        );
+
+        // If the booking contains a valid driver, update the driver's rewardPoints
+        if (booking.driver && mongoose.Types.ObjectId.isValid(booking.driver)) {
+            const driverExists = await Driver.findById(booking.driver);
+            if (driverExists) {
+                await Driver.findByIdAndUpdate(
+                    booking.driver,
+                    { $inc: { rewardPoints: totalPoints } },
+                    { new: true }
+                );
+            }
+        }
+
+        res.status(200).json({
+            message: "Feedback added successfully",
+            booking: updatedBooking
+        });
+
+    } catch (error) {
+        console.error("Error in postFeedback:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// accountant verifying 
+
+exports.accountVerifying = async(req,res)=>{
+    const {id} = req.params
+    console.log('Received ID:', id);
+    try {
+        const updatedBooking = await Booking.findByIdAndUpdate(
+            id,
+            {
+                accountantVerified:true
+            },
+            { new: true } 
+        );
+        if (!updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Accountant verified successfully.',
+            booking: updatedBooking,
+        });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
+    }
+}

@@ -18,7 +18,6 @@ router.put('/:id',jwt,controller.updateBooking);
 // Route to delete booking
 // router.delete('/:id',jwt,controller.deleteBooking);
 //Route to update the pickup and dropoff details
-
 router.put('/pickupbyadmin/:id', jwt, controller.updatePickupByAdmin);
 // Route for the removing the pickup Image
 router.patch('/pickupimage/:id/:index',jwt,controller.removePickupImages);
@@ -32,5 +31,9 @@ router.patch('/addingdropoffimage/:id', jwt,upload.array('images', 6), controlle
 router.patch('/updatefilenumber/:id',jwt,controller.updateFilenumber);
 // Route for verify booking 
 router.patch('/verifybooking/:id',jwt,controller.verifyBooking);
+//Route for posting feedback
+router.put('/postfeedback/:id',jwt, controller.postFeedback);
+//Route for accountant verification
+router.patch('/accountantverify/:id',jwt, controller.accountVerifying);
 
 module.exports = router;

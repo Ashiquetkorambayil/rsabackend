@@ -43,11 +43,21 @@ const bookingSchema = new mongoose.Schema({
     driverSalaryCheck:{type: Boolean},
     compnayAmountCheck:{type: Boolean},
     remark:{type:String},
+    totalPoints:{type:Number},
     serviceVehicleNumber:{type: String},
     pickupImages: { type: [String], default: [] }, 
     dropoffImages: { type: [String], default: [] }, 
+    feedback: [
+        {
+            questionId: { type: String, required: true },
+            response: { type: String, enum: ["yes", "no"], required: true },
+            yesPoint: { type: Number, required: true },
+            noPoint: { type: Number, required: true }
+        }
+    ],
     verified:{type:Boolean},
-    feedback:{type:Boolean}
+    feedbackCheck:{type:Boolean},
+    accountantVerified:{type:Boolean}
 
 }, { timestamps: true });
 
