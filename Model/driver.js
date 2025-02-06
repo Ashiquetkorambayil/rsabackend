@@ -30,6 +30,12 @@ const driverSchema = new mongoose.Schema({
   rewardPoints: {
     type: Number, 
   },
+  cashInHand: {
+    type: Number, 
+  },
+  driverSalary: {
+    type: Number, 
+  },
   vehicle: [
     {
       serviceType: {

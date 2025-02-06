@@ -7,6 +7,8 @@ const upload = require('../config/multer');
 
 // Route to create a new booking
 router.post('/',jwt,controller.createBooking);
+//Route for getting approved bookings
+router.get('/approvedbookings',jwt, controller.getApprovedBookings);
 // Route to get booking
 router.get('/',jwt,controller.getAllBookings);
 // Route to get booking
@@ -35,5 +37,6 @@ router.patch('/verifybooking/:id',jwt,controller.verifyBooking);
 router.put('/postfeedback/:id',jwt, controller.postFeedback);
 //Route for accountant verification
 router.patch('/accountantverify/:id',jwt, controller.accountVerifying);
+
 
 module.exports = router;
