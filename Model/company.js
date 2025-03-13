@@ -40,6 +40,9 @@ const CompanySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  cashInHand: {
+    type: Number, 
+  },
   vehicle: {
     type: [VehicleSchema],
     required: true,

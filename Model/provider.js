@@ -34,6 +34,12 @@ const providerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  cashInHand: {
+    type: Number, 
+  },
+  driverSalary: {
+    type: Number, 
+  },
   serviceDetails: [
     {
       serviceType: {

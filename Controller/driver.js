@@ -48,6 +48,29 @@ exports.getDrivers = async (req, res) => {
   }
 };
 
+exports.filtergetDrivers = async (req, res) => {
+  try {
+    const { search } = req.query; // Get search query from request
+
+    let filter = {};
+    if (search) {
+      // Case-insensitive search for both name and idNumber
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { idNumber: { $regex: search, $options: "i" } }
+        ]
+      };
+    }
+
+    const drivers = await Driver.find(filter).populate('vehicle.serviceType');
+    res.json(drivers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 exports.getDriverById = async (req, res) => {
   try {
     const driver = await Driver.findById(req.params.id).populate('vehicle.serviceType');

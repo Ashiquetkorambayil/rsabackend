@@ -1,6 +1,7 @@
 const Booking = require('../Model/booking');
 const Driver = require('../Model/driver'); // Import your Driver model
 const Provider = require('../Model/provider'); // Import your Provider model
+const Company = require('../Model/company'); // Import your Provider model
 const multer = require('multer')
 const mongoose = require('mongoose');
 
@@ -226,6 +227,16 @@ exports.updateBooking = async (req, res) => {
 
 
     try {
+          // Fetch the existing booking
+          const booking = await Booking.findById(id);
+          if (!booking) {
+              return res.status(404).json({ message: 'Booking not found' });
+          }
+  
+          // Check if the status is "Order Completed" and log the message
+          if (booking.status === "Order Completed") {
+              console.log('The booking is order completed.');
+          }
         // Handle the case where 'company' is an empty string in update
         if (!updatedData.company || updatedData.company === "") {
             updatedData.company = null; // Or you can delete the field entirely if required
@@ -292,9 +303,9 @@ exports.updateBooking = async (req, res) => {
 // Controller for updatatin pickup details from admin side 
 
 exports.updatePickupByAdmin = async (req, res) => {
-  
     try {
         const { id } = req.params;
+
         const {
             totalDistence,
             totalAmount,
@@ -305,12 +316,11 @@ exports.updatePickupByAdmin = async (req, res) => {
             compnayAmountCheck,
             remark,
         } = req.body;
-        console.log(req.body)
-        console.log(id)
 
-      
+        console.log(req.body);
+        console.log(id);
 
-        // Update the booking
+        // Update the booking details
         const updatedBooking = await Booking.findByIdAndUpdate(
             id,
             {
@@ -552,18 +562,76 @@ exports.addDropoffImages = async (req, res) => {
 //   Booking verify 
 
 exports.verifyBooking = async (req, res) => {
-  
     try {
         const { id } = req.params;
-        
-        console.log(id,'this is id')
+        console.log(id, 'this is id');
 
+        // Fetch the booking details
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found.' });
+        }
+
+        // Adjust cash in hand and salary similar to updatePickupByAdmin
+        if (booking.workType === "RSAWork") {
+            const selectedCompany = booking.company;
+            if (!selectedCompany) {
+                console.error('The company is not selected');
+            } else {
+                const company = await Company.findById(selectedCompany);
+                if (company) {
+                    company.cashInHand = company.cashInHand || 0;
+                    company.cashInHand += booking.totalAmount;
+                    await company.save();
+                } else {
+                    console.error('Company not found');
+                }
+            }
+        } else if (booking.workType === 'PaymentWork') {
+            if (booking.provider) {
+                const selectedProvider = await Provider.findById(booking.provider);
+                if (!selectedProvider) {
+                    console.error('The selected provider is not available');
+                } else {
+                    console.log('Total Amount:', booking.totalAmount, 'Driver Salary:', booking.driverSalary);
+                    
+                    selectedProvider.cashInHand = selectedProvider.cashInHand || 0;
+                    selectedProvider.driverSalary = selectedProvider.driverSalary || 0;
+
+                    if (!isNaN(booking.totalAmount) && !isNaN(booking.driverSalary)) {
+                        selectedProvider.cashInHand += booking.totalAmount;
+                        selectedProvider.driverSalary += booking.driverSalary;
+                        await selectedProvider.save();
+                    } else {
+                        console.error('Invalid cashInHand or driverSalary before saving:', selectedProvider.cashInHand, selectedProvider.driverSalary);
+                    }
+                }
+            } else if (booking.driver) {
+                const selectedDriver = await Driver.findById(booking.driver);
+                if (!selectedDriver) {
+                    console.error('The selected driver is not available');
+                } else {
+                    console.log('Total Amount:', booking.totalAmount, 'Driver Salary:', booking.driverSalary);
+                    
+                    selectedDriver.cashInHand = selectedDriver.cashInHand || 0;
+                    selectedDriver.driverSalary = selectedDriver.driverSalary || 0;
+
+                    if (!isNaN(booking.totalAmount) && !isNaN(booking.driverSalary)) {
+                        selectedDriver.cashInHand += booking.totalAmount;
+                        // selectedDriver.driverSalary += booking.driverSalary; // Uncomment if needed
+                        await selectedDriver.save();
+                    } else {
+                        console.error('Invalid cashInHand or driverSalary before saving:', selectedDriver.cashInHand, selectedDriver.driverSalary);
+                    }
+                }
+            }
+        }
+
+        // Update booking status to verified
         const updatedBooking = await Booking.findByIdAndUpdate(
             id,
-            {
-                verified:true
-            },
-            { new: true } // Return the updated document
+            { verified: true },
+            { new: true }
         );
 
         if (!updatedBooking) {
@@ -574,11 +642,13 @@ exports.verifyBooking = async (req, res) => {
             message: 'Booking verified successfully.',
             booking: updatedBooking,
         });
+
     } catch (error) {
         console.error('Error verifying booking:', error);
         res.status(500).json({ message: 'Internal server error.', error: error.message });
     }
 };
+
 
 
 // posting feedback 
@@ -588,6 +658,11 @@ exports.postFeedback = async (req, res) => {
     try {
         const { id } = req.params;
         const { feedback } = req.body;
+
+        // Validate booking ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid booking ID" });
+        }
 
         // Validate feedback input
         if (!Array.isArray(feedback) || feedback.length === 0) {
@@ -612,12 +687,12 @@ exports.postFeedback = async (req, res) => {
             id,
             {
                 $set: {
-                    feedback: feedback, // Directly update the feedback array
-                    totalPoints: totalPoints, // Set totalPoints
-                    feedbackCheck:true
+                    feedback: feedback,
+                    totalPoints: totalPoints,
+                    feedbackCheck: true
                 }
             },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         // If the booking contains a valid driver, update the driver's rewardPoints
@@ -632,8 +707,27 @@ exports.postFeedback = async (req, res) => {
             }
         }
 
+        // **Additional Condition: Update Driver Salary if workType is "paymentWork"**
+        if (booking.driver) {
+            const selectedDriver = await Driver.findById(booking.driver);
+
+            if (selectedDriver) {
+                console.log('Total Amount:', booking.totalAmount, 'Driver Salary:', booking.driverSalary);
+
+                selectedDriver.driverSalary = Number(selectedDriver.driverSalary) || 0;
+                const bookingDriverSalary = Number(booking.driverSalary);
+
+                if (!isNaN(booking.totalAmount) && !isNaN(bookingDriverSalary)) {
+                    selectedDriver.driverSalary += bookingDriverSalary;
+                    await selectedDriver.save();
+                } else {
+                    return res.status(400).json({ message: "Invalid totalAmount or driverSalary" });
+                }
+            }
+        }
+
         res.status(200).json({
-            message: "Feedback added successfully",
+            message: "Feedback and driver salary updated successfully",
             booking: updatedBooking
         });
 

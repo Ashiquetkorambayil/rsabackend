@@ -107,3 +107,24 @@ exports.deleteCompany = async (req, res) => {
 };
 
 
+exports.filtergetCompanies = async (req, res) => {
+  try {
+    const { search } = req.query; // Get search query from request
+
+    let filter = {};
+    if (search) {
+      // Case-insensitive search for both name and idNumber
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { idNumber: { $regex: search, $options: "i" } }
+        ]
+      };
+    }
+
+    const company = await Company.find(filter).populate('vehicle.serviceType');
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

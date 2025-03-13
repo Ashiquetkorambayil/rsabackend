@@ -33,6 +33,9 @@ const driverSchema = new mongoose.Schema({
   cashInHand: {
     type: Number, 
   },
+  advance: {
+    type: Number, 
+  },
   driverSalary: {
     type: Number, 
   },

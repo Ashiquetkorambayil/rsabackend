@@ -1,9 +1,9 @@
 const multer = require('multer');
 
-// Set up Multer storage
+
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'public/images'); // Change to your desired directory
+        cb(null, 'public/images'); 
     },
     filename: function (req, file, cb) {
         const fileExtension = file.originalname.split('.').pop();
