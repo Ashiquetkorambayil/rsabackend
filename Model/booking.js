@@ -14,7 +14,7 @@ const bookingSchema = new mongoose.Schema({
     trapedLocation: { type: String, required: true },
     serviceType: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceType', required: true },
     customerName: { type: String, required: true },
-    serviceCategory: { type: String, required: true },
+    serviceCategory: { type: String },
     mob1: { type: String, required: true },
     mob2: { type: String },
     vehicleType: { type: String, required: true },
@@ -37,7 +37,28 @@ const bookingSchema = new mongoose.Schema({
     amountWithoutInsurance: { type: Number },
     createdBy:{type: String},
     bookedBy:{type: String},
-    pickupDate:{type: String}
+    pickupDate:{type: Date},
+    pickupTime:{type: Date},
+    dropoffTime:{type: Date},
+    driverSalaryCheck:{type: Boolean},
+    compnayAmountCheck:{type: Boolean},
+    remark:{type:String},
+    totalPoints:{type:Number},
+    serviceVehicleNumber:{type: String},
+    pickupImages: { type: [String], default: [] }, 
+    dropoffImages: { type: [String], default: [] }, 
+    feedback: [
+        {
+            questionId: { type: String, required: true },
+            response: { type: String, enum: ["yes", "no"], required: true },
+            yesPoint: { type: Number, required: true },
+            noPoint: { type: Number, required: true }
+        }
+    ],
+    verified:{type:Boolean},
+    feedbackCheck:{type:Boolean},
+    accountantVerified:{type:Boolean}
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

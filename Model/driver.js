@@ -27,6 +27,18 @@ const driverSchema = new mongoose.Schema({
   image: {
     type: String, // Path to the uploaded image
   },
+  rewardPoints: {
+    type: Number, 
+  },
+  cashInHand: {
+    type: Number, 
+  },
+  advance: {
+    type: Number, 
+  },
+  driverSalary: {
+    type: Number, 
+  },
   vehicle: [
     {
       serviceType: {

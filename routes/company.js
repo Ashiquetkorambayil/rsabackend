@@ -7,6 +7,7 @@ const jwt = require('../Middileware/jwt')
 
 router.post('/',jwt, upload.single('image'), controller.createCompany);
 router.get('/',jwt, controller.getCompanies);
+router.get('/filtered',jwt, controller.filtergetCompanies);
 router.get('/:id',jwt, controller.getCompanyById);
 router.put('/:id', upload.single('image'), controller.updateCompany);
 router.delete('/:id',jwt, controller.deleteCompany);

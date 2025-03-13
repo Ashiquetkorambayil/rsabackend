@@ -146,3 +146,27 @@ exports.loginProvider = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// fetching providers by query 
+
+exports.filtergetProviders = async (req, res) => {
+  try {
+    const { search } = req.query; // Get search query from request
+
+    let filter = {};
+    if (search) {
+      // Case-insensitive search for both name and idNumber
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { idNumber: { $regex: search, $options: "i" } }
+        ]
+      };
+    }
+
+    const providers = await Provider.find(filter).populate('baseLocation serviceDetails.serviceType');
+    res.json(providers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
